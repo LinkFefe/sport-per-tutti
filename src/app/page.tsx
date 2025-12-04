@@ -5,28 +5,40 @@ import Link from "next/link";
 import Image from "next/image"; 
 import AddPartyButton from "@/objects/AddPartyButton";
 
-// 1. Definiamo l'interfaccia esatta
+// 1. Interfaccia per i dati che vanno al Frontend (l'app)
 interface PartyEvent {
   _id: string;
   name: string;
-  date: string; // Convertiremo la data in stringa per sicurezza in serializzazione
+  date: string; 
   imageUrl: string;
   location: string;
   description?: string;
 }
 
-// 2. Tipizziamo il ritorno della funzione per evitare "any" dopo
+// 2. Interfaccia per i dati che arrivano "grezzi" dal Database
+// (Serve per togliere l'any dal map)
+interface PartyRaw {
+  _id: unknown;    // L'ID di Mongoose è un oggetto complesso, lo tratteremo come unknown poi convertito
+  name: string;
+  date: Date;      // Dal DB arriva come oggetto Date
+  imageUrl?: string;
+  location: string;
+  description?: string;
+}
+
 async function getParties(): Promise<PartyEvent[]> {
   await connectDB();
   
+  // Recuperiamo i dati. 
+  // Usiamo 'unknown' o un cast esplicito per evitare problemi con i tipi di Mongoose
   const parties = await Party.find().sort({ date: 1 }).lean();
 
-  // Convertiamo i dati di Mongoose in un formato sicuro per il frontend
-  return parties.map((party: any) => ({
-    _id: party._id.toString(),
+  // Qui mappiamo i dati grezzi (PartyRaw) nel formato pulito (PartyEvent)
+  return (parties as unknown as PartyRaw[]).map((party) => ({
+    _id: String(party._id),          // Convertiamo l'ID in stringa sicura
     name: party.name,
-    date: party.date.toISOString(), // Convertiamo data in stringa ISO
-    imageUrl: party.imageUrl,
+    date: party.date.toISOString(),  // Convertiamo la data in stringa
+    imageUrl: party.imageUrl || "",  // Se manca, stringa vuota per sicurezza
     location: party.location,
     description: party.description,
   }));
@@ -76,11 +88,8 @@ export default async function Page() {
             <Link href={`/edit/${party._id}`} key={party._id} className="block group">
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-lg transition cursor-pointer relative">
                 
-                {/* --- SEZIONE IMMAGINE CORRETTA --- */}
-                {/* Aggiunto bg-gray-100 come sfondo di fallback */}
+                {/* --- SEZIONE IMMAGINE --- */}
                 <div className="relative h-48 w-full overflow-hidden bg-gray-100">
-                  
-                  {/* Controllo: Disegna <Image> SOLO se c'è un URL valido */}
                   {party.imageUrl ? (
                     <Image
                       src={party.imageUrl}
@@ -91,13 +100,11 @@ export default async function Page() {
                       priority={false}
                     />
                   ) : (
-                    // Se non c'è immagine, mostra questo placeholder
                     <div className="w-full h-full flex items-center justify-center text-gray-300">
                         <span className="text-4xl">🎉</span>
                     </div>
                   )}
                   
-                  {/* Badge data (rimane sempre visibile sopra) */}
                   <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold shadow-sm flex flex-col items-center z-10">
                       <span className="text-red-500 uppercase text-[10px]">
                         {new Date(party.date).toLocaleDateString("it-IT", { month: "short" })}
@@ -107,7 +114,6 @@ export default async function Page() {
                       </span>
                   </div>
                 </div>
-                {/* --- FINE SEZIONE IMMAGINE --- */}
 
                 <div className="p-5">
                   <div className="flex justify-between items-start">
