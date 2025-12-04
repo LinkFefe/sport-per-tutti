@@ -1,9 +1,10 @@
 import connectDB from "@/lib/db";
 import Party from "@/models/Party";
-import { Home, Package, Trash2 } from "lucide-react";
+import { Home, Package } from "lucide-react"; // Trash2 rimosso da qui, è nel componente bottone
 import Link from "next/link";
 import Image from "next/image"; 
 import AddPartyButton from "@/objects/AddPartyButton";
+import DeletePartyButton from "@/objects/DeletePartyButton"; // <-- IMPORTA IL NUOVO BOTTONE (Aggiusta il percorso se serve)
 import { revalidatePath } from "next/cache";
 
 // 1. Interfaccia Frontend
@@ -26,10 +27,9 @@ interface PartyRaw {
   description?: string;
 }
 
-// --- SERVER ACTION PER ELIMINARE ---
-async function deleteEvent(formData: FormData) {
+// --- SERVER ACTION PER ELIMINARE (Modificata per accettare stringa) ---
+async function deleteEvent(id: string) {
   "use server";
-  const id = formData.get("id");
   
   if (id) {
     await connectDB();
@@ -93,10 +93,9 @@ export default async function Page() {
           </div>
         ) : (
           parties.map((party) => (
-            // Card container (NON è un link)
             <div key={party._id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition">
               
-              {/* --- SEZIONE IMMAGINE (Statica) --- */}
+              {/* --- SEZIONE IMMAGINE --- */}
               <div className="relative h-48 w-full overflow-hidden bg-gray-100">
                 {party.imageUrl ? (
                   <Image
@@ -113,7 +112,6 @@ export default async function Page() {
                   </div>
                 )}
                 
-                {/* Badge Data */}
                 <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold shadow-sm flex flex-col items-center z-10">
                     <span className="text-red-500 uppercase text-[10px]">
                       {new Date(party.date).toLocaleDateString("it-IT", { month: "short" })}
@@ -127,13 +125,10 @@ export default async function Page() {
               {/* --- CONTENUTO CARD --- */}
               <div className="p-5">
                 <div className="flex justify-between items-start mb-2">
-                    {/* Titolo (Statico) */}
                     <h2 className="text-xl font-bold text-gray-900 flex-1 pr-2">{party.name}</h2>
 
-                    {/* --- BOTTONI AZIONE --- */}
                     <div className="flex items-center gap-2 shrink-0">
                       
-                      {/* Tasto Modifica (Unico Link di navigazione) */}
                       <Link 
                         href={`/edit/${party._id}`}
                         className="text-white text-xs bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition flex items-center gap-1 shadow-sm font-medium"
@@ -141,34 +136,23 @@ export default async function Page() {
                         ✏️ Modifica
                       </Link>
 
-                      {/* Tasto Elimina (Server Action) */}
-                      <form action={deleteEvent}>
-                        <input type="hidden" name="id" value={party._id} />
-                        <button 
-                          type="submit" 
-                          className="text-gray-400 text-xs bg-gray-100 px-2 py-1.5 rounded-lg hover:text-red-600 hover:bg-red-50 transition flex items-center justify-center border border-gray-200"
-                          title="Elimina evento"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </form>
+                      {/* --- NUOVO COMPONENTE CON POPUP --- */}
+                      {/* Passiamo l'ID e la Server Action come prop */}
+                      <DeletePartyButton id={party._id} deleteAction={deleteEvent} />
 
                     </div>
                 </div>
                 
-                {/* Luogo */}
                 <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
                     <div className="flex items-center gap-1">
                       <span>📍 {party.location}</span>
                     </div>
                 </div>
 
-                {/* Descrizione */}
                 <p className="text-gray-600 text-sm line-clamp-2 mb-4">
                   {party.description || "Nessun dettaglio aggiuntivo."}
                 </p>
                 
-                {/* Footer (Solo orario, non cliccabile) */}
                 <div className="pt-3 border-t border-gray-100 text-xs text-gray-500 font-semibold flex items-center gap-1">
                     <span>⏰ Ore {new Date(party.date).toLocaleTimeString("it-IT", {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>

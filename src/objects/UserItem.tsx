@@ -1,8 +1,7 @@
 "use client";
 
-import { updateQuota } from "@/app/actions";
+import { updateQuota, deleteUser } from "@/app/actions";
 import { Minus, Plus, Trash2, User as UserIcon } from "lucide-react";
-import { deleteUser } from "@/app/actions";
 
 // Definiamo come è fatto un utente
 interface UserProps {
@@ -10,17 +9,16 @@ interface UserProps {
     _id: string;
     name: string;
     surname: string;
-    // Usiamo 'any' qui per accettare i dati dal genitore che non ha tipizzato 'quota' esplicitamente
-    // Questo risolve l'errore di build "Type unknown is not assignable to type number"
+    // Manteniamo 'any' per compatibilità col tuo codice attuale
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     quota: any; 
   };
 }
 
 export default function UserItem({ user }: UserProps) {
   
-  // Funzioni veloci per i bottoni
+  // Funzioni veloci per i bottoni quota
   const handleIncrease = async () => {
-    // TypeScript ora accetta l'operazione matematica perché quota è 'any'
     await updateQuota(user._id, Number(user.quota) + 1);
   };
 
@@ -28,8 +26,21 @@ export default function UserItem({ user }: UserProps) {
     await updateQuota(user._id, Number(user.quota) - 1);
   };
 
+  // --- NUOVA FUNZIONE DI CONFERMA ELIMINAZIONE ---
+  const handleDelete = (e: React.FormEvent) => {
+    // Mostra il popup nativo del browser
+    const confirmed = window.confirm(
+      `Sei sicuro di voler eliminare ${user.name} ${user.surname}?`
+    );
+
+    // Se l'utente clicca "Annulla", blocchiamo l'invio del form
+    if (!confirmed) {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between mb-3">
+    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between mb-3 hover:shadow-md transition duration-200">
       
       {/* Info Utente */}
       <div className="flex items-center gap-3">
@@ -49,29 +60,34 @@ export default function UserItem({ user }: UserProps) {
         <div className="flex items-center bg-gray-50 rounded-lg p-1">
             <button 
                 onClick={handleDecrease}
-                title="Decrease quota"
+                title="Diminuisci quota"
                 className="w-8 h-8 flex items-center justify-center bg-white rounded-md shadow-sm text-gray-600 hover:text-red-500 active:scale-95 transition"
             >
                 <Minus size={14} />
             </button>
             
-            <span className="font-bold text-lg text-gray-800 w-8 text-center">
+            <span className="font-bold text-lg text-gray-800 w-8 text-center select-none">
                 {user.quota}
             </span>
 
             <button 
                 onClick={handleIncrease}
-                title="Increase quota"
+                title="Aumenta quota"
                 className="w-8 h-8 flex items-center justify-center bg-blue-600 rounded-md shadow-sm text-white hover:bg-blue-700 active:scale-95 transition"
             >
                 <Plus size={14} />
             </button>
         </div>
 
-        {/* Tasto Elimina (piccolo cestino grigio) */}
-        <form action={deleteUser}>
+        {/* Tasto Elimina con Conferma */}
+        {/* Aggiunto onSubmit={handleDelete} */}
+        <form action={deleteUser} onSubmit={handleDelete}>
             <input type="hidden" name="id" value={user._id} />
-            <button type="submit" title="Delete user" className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-400 transition">
+            <button 
+                type="submit" 
+                title="Elimina partecipante" 
+                className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+            >
                 <Trash2 size={16} />
             </button>
         </form>
