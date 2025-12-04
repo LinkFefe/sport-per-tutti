@@ -2,25 +2,35 @@ import connectDB from "@/lib/db";
 import Party from "@/models/Party";
 import { Home, Package } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image"; // 👈 Importiamo il componente Image
+import Image from "next/image"; 
 import AddPartyButton from "@/objects/AddPartyButton";
 
-// 1. Definiamo l'interfaccia per i dati della festa
+// 1. Definiamo l'interfaccia esatta
 interface PartyEvent {
-  _id: string; // Accettiamo che possa essere una stringa o un ObjectId
+  _id: string;
   name: string;
-  date: string | Date;
+  date: string; // Convertiremo la data in stringa per sicurezza in serializzazione
   imageUrl: string;
   location: string;
   description?: string;
-  [key: string]: unknown; // Per eventuali altri campi extra
 }
 
-async function getParties() {
+// 2. Tipizziamo il ritorno della funzione per evitare "any" dopo
+async function getParties(): Promise<PartyEvent[]> {
   await connectDB();
-  // lean() restituisce oggetti JS semplici, non documenti Mongoose pesanti
+  
   const parties = await Party.find().sort({ date: 1 }).lean();
-  return parties;
+
+  // Convertiamo i dati di Mongoose in un formato sicuro per il frontend
+  // (Mongoose lean() può ritornare _id come oggetto, noi lo vogliamo stringa)
+  return parties.map((party: any) => ({
+    _id: party._id.toString(),
+    name: party.name,
+    date: party.date.toISOString(), // Convertiamo data in stringa ISO
+    imageUrl: party.imageUrl,
+    location: party.location,
+    description: party.description,
+  }));
 }
 
 export default async function Page() {
@@ -37,7 +47,6 @@ export default async function Page() {
             <span className="text-[10px] font-bold mt-1 uppercase tracking-wider">Home</span>
           </Link>
 
-          {/* Icona Box (LINK ATTIVO A /BOX) */}
           <Link href="/box" className="flex flex-col items-center text-gray-400 hover:text-blue-600 transition">
             <Package size={26} />
             <span className="text-[10px] font-medium mt-1 uppercase tracking-wider">Gestisci</span>
@@ -51,8 +60,6 @@ export default async function Page() {
         {/* TITOLO + PULSANTE INTELLIGENTE */}
         <div className="flex justify-between items-start mb-2 h-14">
             <h1 className="text-2xl font-bold text-gray-800 self-center">I tuoi Eventi</h1>
-            
-            {/* COMPONENTE BUTTON */}
             <AddPartyButton count={parties.length} />
         </div>
 
@@ -66,30 +73,29 @@ export default async function Page() {
             <p className="text-sm mt-1 mb-4">Non hai ancora organizzato nessuna festa.</p>
           </div>
         ) : (
-          // 2. Usiamo un cast sicuro (unknown -> PartyEvent) per evitare "any"
-          parties.map((doc: unknown) => {
-            const party = doc as PartyEvent;
-            
-            return (
-            <Link href={`/edit/${party._id}`} key={party._id.toString()} className="block group">
+          // ORA TypeScript sa che "party" è di tipo PartyEvent, non serve casting manuale!
+          parties.map((party) => (
+            <Link href={`/edit/${party._id}`} key={party._id} className="block group">
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-lg transition cursor-pointer relative">
                 
-                {/* 3. SOSTITUZIONE IMG CON NEXT/IMAGE 
-                   Il contenitore padre ha "relative h-48 w-full", quindi usiamo "fill"
-                   per riempire lo spazio mantenendo l'aspect ratio (object-cover).
-                */}
+                {/* Immagine ottimizzata */}
                 <div className="relative h-48 w-full overflow-hidden">
                   <Image
                     src={party.imageUrl}
                     alt={party.name}
-                    fill // Riempie il contenitore padre
+                    fill
                     className="object-cover transition duration-500 group-hover:scale-105"
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    priority={false}
                   />
                   
                   <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold shadow-sm flex flex-col items-center z-10">
-                      <span className="text-red-500 uppercase text-[10px]">{new Date(party.date).toLocaleDateString("it-IT", { month: "short" })}</span>
-                      <span className="text-lg leading-none text-gray-800">{new Date(party.date).toLocaleDateString("it-IT", { day: "numeric" })}</span>
+                      <span className="text-red-500 uppercase text-[10px]">
+                        {new Date(party.date).toLocaleDateString("it-IT", { month: "short" })}
+                      </span>
+                      <span className="text-lg leading-none text-gray-800">
+                        {new Date(party.date).toLocaleDateString("it-IT", { day: "numeric" })}
+                      </span>
                   </div>
                 </div>
 
@@ -116,7 +122,7 @@ export default async function Page() {
                 </div>
               </div>
             </Link>
-          )})
+          ))
         )}
       </main>
     </div>

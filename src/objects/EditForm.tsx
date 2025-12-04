@@ -4,14 +4,14 @@ import { updateParty, deleteParty } from "@/app/actions";
 import { ArrowLeft, Image as ImageIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import Image from "next/image"; // 👈 Importiamo il componente Image
+import Image from "next/image"; 
 
-// Definiamo che tipo di dati ci aspettiamo dal database
+// Definiamo che tipo di dati ci aspettiamo (deve coincidere con quello passato dalla page)
 interface EditFormProps {
   party: {
     _id: string;
     name: string;
-    date: string; // Arriverà come stringa ISO
+    date: string; 
     location: string;
     description: string;
     imageUrl: string;
@@ -19,17 +19,20 @@ interface EditFormProps {
 }
 
 export default function EditForm({ party }: EditFormProps) {
-  // 1. Prepariamo le date per i campi input HTML (che sono schizzinosi)
-  const dateObj = new Date(party.date);
-  
-  // Estrae YYYY-MM-DD per l'input type="date"
-  const defaultDate = dateObj.toISOString().split("T")[0];
-  
-  // Estrae HH:MM per l'input type="time"
-  const defaultTime = dateObj.toLocaleTimeString("it-IT", { 
-    hour: "2-digit", 
-    minute: "2-digit" 
-  });
+  // 1. Prepariamo le date
+  // Usiamo un try-catch o un controllo semplice nel caso la data nel DB sia corrotta
+  let defaultDate = "";
+  let defaultTime = "";
+
+  try {
+      const dateObj = new Date(party.date);
+      if (!isNaN(dateObj.getTime())) {
+          defaultDate = dateObj.toISOString().split("T")[0];
+          defaultTime = dateObj.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" });
+      }
+  } catch (e) {
+      console.error("Errore parsing data", e);
+  }
 
   // 2. Stato per l'anteprima live dell'immagine
   const [previewUrl, setPreviewUrl] = useState(party.imageUrl);
@@ -43,7 +46,7 @@ export default function EditForm({ party }: EditFormProps) {
           <ArrowLeft size={18} className="mr-2" /> Annulla
         </Link>
         
-        {/* Pulsante Elimina (è un form separato per sicurezza) */}
+        {/* Pulsante Elimina */}
         <form action={deleteParty}>
             <input type="hidden" name="id" value={party._id} />
             <button 
@@ -65,7 +68,6 @@ export default function EditForm({ party }: EditFormProps) {
       {/* --- MODULO PRINCIPALE DI MODIFICA --- */}
       <form action={updateParty} className="space-y-5">
         
-        {/* ⚠️ FONDAMENTALE: Passiamo l'ID nascosto al server */}
         <input type="hidden" name="id" value={party._id} />
 
         {/* Nome */}
@@ -77,7 +79,6 @@ export default function EditForm({ party }: EditFormProps) {
             type="text" 
             required 
             placeholder="Es: Capodanno 2025"
-            title="Titolo dell'evento"
             defaultValue={party.name} 
             className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition" 
           />
@@ -93,8 +94,6 @@ export default function EditForm({ party }: EditFormProps) {
                 type="date" 
                 required 
                 defaultValue={defaultDate}
-                title="Data dell'evento (anno-mese-giorno)"
-                aria-label="Data dell'evento"
                 className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition" 
             />
           </div>
@@ -106,8 +105,6 @@ export default function EditForm({ party }: EditFormProps) {
                 type="time" 
                 required 
                 defaultValue={defaultTime}
-                title="Ora dell'evento (formato 24h)"
-                aria-label="Ora dell'evento"
                 className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition" 
             />
           </div>
@@ -120,9 +117,6 @@ export default function EditForm({ party }: EditFormProps) {
             id="location"
             name="location"
             type="text"
-            placeholder="Es: Casa mia"
-            title="Luogo dell'evento"
-            aria-required="true"
             required
             defaultValue={party.location} 
             className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition" 
@@ -138,7 +132,6 @@ export default function EditForm({ party }: EditFormProps) {
                     name="imageUrl" 
                     type="url"  
                     placeholder="https://..."
-                    title="URL immagine dell'evento"
                     defaultValue={party.imageUrl}
                     onChange={(e) => setPreviewUrl(e.target.value)}
                     className="w-full p-3 pl-10 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition" 
@@ -146,34 +139,30 @@ export default function EditForm({ party }: EditFormProps) {
                 <ImageIcon size={18} className="absolute left-3 top-3.5 text-gray-400" />
             </div>
 
-            {previewUrl && (
+            {/* Mostra l'anteprima solo se c'è un URL valido (contiene http) */}
+            {previewUrl && previewUrl.startsWith("http") && (
                 <div className="mt-4 relative h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-                    {/* QUI LA MODIFICA PRINCIPALE:
-                       Usiamo Image con 'fill' e 'unoptimized'
-                    */}
                     <Image 
                         src={previewUrl} 
                         alt="Anteprima" 
                         fill
-                        unoptimized // Permette di caricare URL esterni senza configurarli
                         className="object-cover" 
+                        sizes="(max-width: 768px) 100vw, 400px" // Ottimizzazione performance
                     />
                     <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm z-10">
-                        Nuova Anteprima
+                        Anteprima Immagine
                     </div>
                 </div>
             )}
         </div>
 
-        {/* Descrizione (Textarea corretta) */}
+        {/* Descrizione */}
         <div>
           <label htmlFor="description" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Descrizione</label>
           <textarea 
               id="description"
               name="description" 
               rows={3} 
-              placeholder="Descrivi i dettagli della festa..."
-              title="Descrizione dell'evento"
               defaultValue={party.description} 
               className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition"
           ></textarea>

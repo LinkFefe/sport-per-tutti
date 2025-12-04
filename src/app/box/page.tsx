@@ -5,28 +5,29 @@ import UserItem from "@/objects/UserItem";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 
-// 1. Definiamo un tipo per i dati grezzi che arrivano da MongoDB
-interface UserDocument {
-  _id: { toString: () => string };
+// 1. Definiamo l'interfaccia esatta per il Frontend
+export interface UserProps {
+  _id: string;
   name: string;
   surname: string;
-  quota: number; // 👈 AGGIUNTO: Ora TypeScript sa che questo campo esiste!
-  // Consente altre proprietà aggiuntive
-  [key: string]: unknown; 
+  quota: number;
 }
 
-async function getUsers() {
+// 2. Tipizziamo il ritorno della funzione
+async function getUsers(): Promise<UserProps[]> {
   await connectDB();
+  
   const users = await User.find().sort({ name: 1 }).lean();
   
-  // 2. Usiamo il tipo UserDocument
-  return users.map((doc: unknown) => {
-    const u = doc as UserDocument;
-    return {
-      ...u,
-      _id: u._id.toString()
-    };
-  });
+  // 3. Convertiamo i dati. Usiamo 'any' per 'doc' per evitare errori di lettura,
+  // ma il ritorno è garantito essere UserProps[] dalla firma della funzione.
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  return users.map((doc: any) => ({
+      _id: doc._id.toString(),
+      name: doc.name,
+      surname: doc.surname,
+      quota: doc.quota || 0, // Fallback a 0 se manca
+  }));
 }
 
 export default async function BoxPage() {
@@ -48,7 +49,6 @@ export default async function BoxPage() {
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-8">
             <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Aggiungi Nuovo</h2>
             
-            {/* items-end serve per allineare il bottone in basso con gli input */}
             <form action={createUser} className="flex gap-2 items-end">
                 
                 {/* Gruppo Nome */}
@@ -101,7 +101,7 @@ export default async function BoxPage() {
                 </div>
             ) : (
                 users.map((user) => (
-                    // Ora 'user' ha sicuramente la proprietà 'quota' richiesta da UserItem
+                    // Qui passiamo l'oggetto user pulito e tipizzato
                     <UserItem key={user._id} user={user} />
                 ))
             )}
