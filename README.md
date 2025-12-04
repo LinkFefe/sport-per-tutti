@@ -35,7 +35,3 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-----------Di mongo atlas ------------
-User: fedequinto7_db_user
-Password: 6iOrI62864uio0Z6
-URI totale: MONGODB_URI="mongodb+srv://fedequinto7_db_user:6iOrI62864uio0Z6@cluster0.gy9o1be.mongodb.net/?appName=Cluster0"
