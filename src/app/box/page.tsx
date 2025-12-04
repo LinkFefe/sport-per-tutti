@@ -42,12 +42,12 @@ export default async function BoxPage() {
             <Link href="/" className="flex items-center text-gray-500 hover:text-gray-900 transition">
                 <ArrowLeft size={20} className="mr-2" /> Torna alla Home
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">Partecipanti 👥</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Boxs 👥</h1>
         </div>
 
         {/* --- FORM PER AGGIUNGERE PERSONA --- */}
         <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-8">
-            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Aggiungi Nuovo</h2>
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Aggiungi Nuovo Partecipante</h2>
             
             <form action={createUser} className="flex gap-2 items-end">
                 
