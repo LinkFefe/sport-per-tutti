@@ -2,10 +2,23 @@ import connectDB from "@/lib/db";
 import Party from "@/models/Party";
 import EditForm from "./EditForm";
 import { notFound } from "next/navigation";
-import mongoose from "mongoose"; // 👈 Importiamo mongoose per il controllo
+import mongoose from "mongoose"; 
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+// 1. Definiamo l'interfaccia per l'oggetto Party "trasformato"
+// Questo sostituisce l'uso di "any"
+interface PartyData {
+  _id: string;
+  name: string;
+  date: string;
+  location: string;
+  description: string;
+  imageUrl: string;
+  // keep index signature for any other fields coming from Mongo
+  [key: string]: unknown;
 }
 
 export default async function EditPage({ params }: PageProps) {
@@ -13,8 +26,6 @@ export default async function EditPage({ params }: PageProps) {
   const { id } = await params;
 
   // 🛡️ CONTROLLO DI SICUREZZA 🛡️
-  // Verifichiamo se l'ID è valido per MongoDB.
-  // Se l'utente scrive "h" o "ciao" o numeri a caso, lo mandiamo alla pagina 404.
   if (!mongoose.isValidObjectId(id)) {
     return notFound();
   }
@@ -30,11 +41,12 @@ export default async function EditPage({ params }: PageProps) {
   }
 
   // 4. Convertiamo i dati strani di MongoDB
+  // Usiamo 'as unknown as PartyData' per soddisfare TypeScript ed ESLint
   const party = {
     ...partyDoc,
     _id: partyDoc._id.toString(),
     date: partyDoc.date.toISOString(),
-  } as any;
+  } as unknown as PartyData;
 
   // 5. Mostriamo il form
   return (

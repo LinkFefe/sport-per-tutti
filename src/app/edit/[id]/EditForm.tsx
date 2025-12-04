@@ -4,6 +4,7 @@ import { updateParty, deleteParty } from "@/app/actions";
 import { ArrowLeft, Image as ImageIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import Image from "next/image"; // 👈 Importiamo il componente Image
 
 // Definiamo che tipo di dati ci aspettiamo dal database
 interface EditFormProps {
@@ -147,13 +148,17 @@ export default function EditForm({ party }: EditFormProps) {
 
             {previewUrl && (
                 <div className="mt-4 relative h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-                    <img 
+                    {/* QUI LA MODIFICA PRINCIPALE:
+                       Usiamo Image con 'fill' e 'unoptimized'
+                    */}
+                    <Image 
                         src={previewUrl} 
                         alt="Anteprima" 
-                        className="w-full h-full object-cover" 
-                        onError={(e) => (e.currentTarget.style.display = 'none')} 
+                        fill
+                        unoptimized // Permette di caricare URL esterni senza configurarli
+                        className="object-cover" 
                     />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm">
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm z-10">
                         Nuova Anteprima
                     </div>
                 </div>

@@ -80,13 +80,14 @@ export async function deleteParty(formData: FormData) {
 export async function createUser(formData: FormData) {
   await connectDB();
   
-  const name = formData.get("name");
-  const surname = formData.get("surname");
-  
+  // Convert FormData entries to strings to satisfy Mongoose/TypeScript types
+  const name = formData.get("name")?.toString().trim() || "";
+  const surname = formData.get("surname")?.toString().trim() || "";
+
   await User.create({
     name,
     surname,
-    quota: 0 // Partiamo da 5 di default, o puoi metterlo a 0
+    quota: 0 // Start quota at 0
   });
 
   revalidatePath("/box"); // Aggiorna la lista nella pagina Box

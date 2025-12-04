@@ -1,16 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  
-  // 1. Ignoriamo gli errori di ESLint (come "Unexpected any")
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
-  // 2. Ignoriamo gli errori di TypeScript durante la build
-  typescript: {
-    ignoreBuildErrors: true,
+  /* Opzioni di configurazione */
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**", // 👈 Questo permette immagini da QUALSIASI sito esterno
+      },
+    ],
   },
 };
 

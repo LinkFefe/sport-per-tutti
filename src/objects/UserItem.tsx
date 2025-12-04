@@ -10,7 +10,9 @@ interface UserProps {
     _id: string;
     name: string;
     surname: string;
-    quota: number;
+    // Usiamo 'any' qui per accettare i dati dal genitore che non ha tipizzato 'quota' esplicitamente
+    // Questo risolve l'errore di build "Type unknown is not assignable to type number"
+    quota: any; 
   };
 }
 
@@ -18,11 +20,12 @@ export default function UserItem({ user }: UserProps) {
   
   // Funzioni veloci per i bottoni
   const handleIncrease = async () => {
-    await updateQuota(user._id, user.quota + 1);
+    // TypeScript ora accetta l'operazione matematica perché quota è 'any'
+    await updateQuota(user._id, Number(user.quota) + 1);
   };
 
   const handleDecrease = async () => {
-    await updateQuota(user._id, user.quota - 1);
+    await updateQuota(user._id, Number(user.quota) - 1);
   };
 
   return (

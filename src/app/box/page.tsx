@@ -5,14 +5,28 @@ import UserItem from "@/objects/UserItem";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 
+// 1. Definiamo un tipo per i dati grezzi che arrivano da MongoDB
+interface UserDocument {
+  _id: { toString: () => string };
+  name: string;
+  surname: string;
+  quota: number; // 👈 AGGIUNTO: Ora TypeScript sa che questo campo esiste!
+  // Consente altre proprietà aggiuntive
+  [key: string]: unknown; 
+}
+
 async function getUsers() {
   await connectDB();
   const users = await User.find().sort({ name: 1 }).lean();
   
-  return users.map((u: any) => ({
-    ...u,
-    _id: u._id.toString()
-  }));
+  // 2. Usiamo il tipo UserDocument
+  return users.map((doc: unknown) => {
+    const u = doc as UserDocument;
+    return {
+      ...u,
+      _id: u._id.toString()
+    };
+  });
 }
 
 export default async function BoxPage() {
@@ -87,6 +101,7 @@ export default async function BoxPage() {
                 </div>
             ) : (
                 users.map((user) => (
+                    // Ora 'user' ha sicuramente la proprietà 'quota' richiesta da UserItem
                     <UserItem key={user._id} user={user} />
                 ))
             )}
