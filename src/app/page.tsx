@@ -22,7 +22,6 @@ async function getParties(): Promise<PartyEvent[]> {
   const parties = await Party.find().sort({ date: 1 }).lean();
 
   // Convertiamo i dati di Mongoose in un formato sicuro per il frontend
-  // (Mongoose lean() può ritornare _id come oggetto, noi lo vogliamo stringa)
   return parties.map((party: any) => ({
     _id: party._id.toString(),
     name: party.name,
@@ -73,22 +72,32 @@ export default async function Page() {
             <p className="text-sm mt-1 mb-4">Non hai ancora organizzato nessuna festa.</p>
           </div>
         ) : (
-          // ORA TypeScript sa che "party" è di tipo PartyEvent, non serve casting manuale!
           parties.map((party) => (
             <Link href={`/edit/${party._id}`} key={party._id} className="block group">
               <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-lg transition cursor-pointer relative">
                 
-                {/* Immagine ottimizzata */}
-                <div className="relative h-48 w-full overflow-hidden">
-                  <Image
-                    src={party.imageUrl}
-                    alt={party.name}
-                    fill
-                    className="object-cover transition duration-500 group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    priority={false}
-                  />
+                {/* --- SEZIONE IMMAGINE CORRETTA --- */}
+                {/* Aggiunto bg-gray-100 come sfondo di fallback */}
+                <div className="relative h-48 w-full overflow-hidden bg-gray-100">
                   
+                  {/* Controllo: Disegna <Image> SOLO se c'è un URL valido */}
+                  {party.imageUrl ? (
+                    <Image
+                      src={party.imageUrl}
+                      alt={party.name}
+                      fill
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority={false}
+                    />
+                  ) : (
+                    // Se non c'è immagine, mostra questo placeholder
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <span className="text-4xl">🎉</span>
+                    </div>
+                  )}
+                  
+                  {/* Badge data (rimane sempre visibile sopra) */}
                   <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg text-xs font-bold shadow-sm flex flex-col items-center z-10">
                       <span className="text-red-500 uppercase text-[10px]">
                         {new Date(party.date).toLocaleDateString("it-IT", { month: "short" })}
@@ -98,6 +107,7 @@ export default async function Page() {
                       </span>
                   </div>
                 </div>
+                {/* --- FINE SEZIONE IMMAGINE --- */}
 
                 <div className="p-5">
                   <div className="flex justify-between items-start">
