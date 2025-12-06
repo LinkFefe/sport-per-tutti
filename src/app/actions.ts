@@ -11,6 +11,9 @@ const ADMIN_USER = "admin";
 const ADMIN_PASS = "adminpw";
 const COOKIE_NAME = "admin_session";
 
+// Corrisponde a MAX_FEEDBACKS nel frontend
+const MAX_HISTORY_ITEMS = 20; 
+
 async function checkAuth() {
   const cookieStore = await cookies();
   const session = cookieStore.get(COOKIE_NAME);
@@ -122,11 +125,14 @@ export async function createUser(formData: FormData) {
     name,
     surname,
     quota: 0,
+    baseQuota: 0,
+    quotaHistory: [],
   });
 
   revalidatePath("/box");
 }
 
+// AZIONE AGGIUSTATA PER SALVARE LO STORICO
 export async function updateQuota(userId: string, newQuota: number) {
   const isAdmin = await checkAuth();
   if (!isAdmin) return;
@@ -134,9 +140,35 @@ export async function updateQuota(userId: string, newQuota: number) {
   await connectDB();
 
   if (newQuota < 0) return;
+  
+  // Recupera l'utente corrente per calcolare la differenza
+  const userDoc = await User.findById(userId).lean();
+  if (!userDoc) return;
+  
+  const oldQuota = Number(userDoc.quota) || 0;
+  const difference = newQuota - oldQuota;
+  
+  const feedback = {
+    timestamp: new Date(),
+    difference,
+    newQuota,
+    field: 'quota',
+  };
+  
+  const MAX_HISTORY = 20;
+  
+  try {
+    const res = await User.findByIdAndUpdate(userId, {
+      $set: { quota: newQuota },
+      $push: { quotaHistory: { $each: [feedback], $position: 0, $slice: MAX_HISTORY } },
+    });
 
-  await User.findByIdAndUpdate(userId, { quota: newQuota });
-  revalidatePath("/box");
+    revalidatePath("/box");
+    return true;
+  } catch (err) {
+    console.error("Errore updateQuota:", err);
+    return false;
+  }
 }
 
 export async function deleteUser(formData: FormData) {
@@ -147,4 +179,67 @@ export async function deleteUser(formData: FormData) {
   const id = formData.get("id");
   await User.findByIdAndDelete(id);
   revalidatePath("/box");
+}
+
+
+export async function ensureQuotaHistory() {
+  await connectDB();
+  // Imposta quotaHistory = [] per i documenti che non hanno il campo
+  await User.updateMany({ quotaHistory: { $exists: false } }, { $set: { quotaHistory: [] } });
+  // Imposta baseQuota = quota per i documenti che non hanno baseQuota
+  await User.updateMany({ baseQuota: { $exists: false } }, [{ $set: { baseQuota: { $ifNull: ["$baseQuota", "$quota"] } } }]);
+  revalidatePath("/box");
+}
+
+// Aggiorna entrambi i campi baseQuota e quota (se necessario) e registra i feedback
+export async function updateQuotas(userId: string, baseQuota: number, newQuota: number) {
+  const isAdmin = await checkAuth();
+  if (!isAdmin) return false;
+
+  await connectDB();
+
+  console.log('updateQuotas called', { userId, baseQuota, newQuota });
+
+  if (baseQuota < 0 || newQuota < 0) return false;
+
+  const userDoc = await User.findById(userId).lean();
+  if (!userDoc) return false;
+
+  const ops: any = { $set: {}, $push: {} };
+  const feedbacks: any[] = [];
+  // baseQuota
+  const oldBase = Number(userDoc.baseQuota ?? userDoc.quota) || 0;
+  const oldQuota = Number(userDoc.quota) || 0;
+
+  // If either value changed, create a single feedback entry that records both values
+  const changedBase = baseQuota !== oldBase;
+  const changedQuota = newQuota !== oldQuota;
+
+  if (!changedBase && !changedQuota) {
+    return true;
+  }
+
+  const feedbackEntry = {
+    timestamp: new Date(),
+    baseQuota: baseQuota,
+    quota: newQuota,
+    difference: (newQuota - oldQuota),
+  };
+
+  // set fields to update
+  if (changedBase) ops.$set.baseQuota = baseQuota;
+  if (changedQuota) ops.$set.quota = newQuota;
+
+  // push single feedback entry at the beginning, limit to MAX_HISTORY_ITEMS
+  ops.$push.quotaHistory = { $each: [feedbackEntry], $position: 0, $slice: MAX_HISTORY_ITEMS };
+
+  try {
+    await User.findByIdAndUpdate(userId, ops);
+    revalidatePath('/box');
+    console.log('updateQuotas success', { userId, ops });
+    return true;
+  } catch (err) {
+    console.error('Errore updateQuotas:', err);
+    return false;
+  }
 }

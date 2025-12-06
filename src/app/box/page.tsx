@@ -12,6 +12,8 @@ export interface UserProps {
   name: string;
   surname: string;
   quota: number;
+  baseQuota?: number;
+  quotaHistory?: any[];
 }
 
 // 2. Fetch utenti
@@ -25,6 +27,8 @@ async function getUsers(): Promise<UserProps[]> {
     name: doc.name,
     surname: doc.surname,
     quota: doc.quota || 0,
+    baseQuota: doc.baseQuota ?? doc.quota ?? 0,
+    quotaHistory: doc.quotaHistory ?? [],
   }));
 }
 
@@ -89,6 +93,7 @@ export default async function BoxPage() {
                 <Plus size={20} />
               </button>
             </form>
+
           </div>
         )}
 
@@ -107,7 +112,7 @@ export default async function BoxPage() {
               <UserItem
                 key={user._id}
                 user={user}
-                isAdmin={isAdmin} // ⬅️ NUOVA PROP PASSATA QUI
+                isAdmin={isAdmin} 
               />
             ))
           )}
