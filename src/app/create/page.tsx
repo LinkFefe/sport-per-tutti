@@ -1,6 +1,7 @@
 import { createParty } from "../actions";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import ImagePicker from "@/objects/ImagePicker";
 
 export default function CreatePage() {
   return (
@@ -78,17 +79,9 @@ export default function CreatePage() {
           </div>
 
           <div>
-            <label htmlFor="imageUrl" className="block text-sm font-medium text-gray-700 mb-1">Link Immagine (URL)</label>
-            <input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              placeholder="https://..."
-              title="URL immagine dell'evento"
-              aria-required="true"
-              className="w-full p-3 border rounded-lg bg-gray-50 text-gray-900"
-            />
-            <p className="text-xs text-gray-400 mt-1">Copia un link da Google Immagini</p>
+            <label htmlFor="imagePicker" className="block text-sm font-medium text-gray-700 mb-1">Immagine</label>
+            <ImagePicker name="imageUrl" initial={undefined} />
+            <p className="text-xs text-gray-400 mt-1">Seleziona un'immagine dalla galleria</p>
           </div>
 
           <div>

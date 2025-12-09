@@ -5,6 +5,7 @@ import { ArrowLeft, Image as ImageIcon, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image"; 
+import ImagePicker from "@/objects/ImagePicker";
 
 // Definiamo che tipo di dati ci aspettiamo (deve coincidere con quello passato dalla page)
 interface EditFormProps {
@@ -125,35 +126,24 @@ export default function EditForm({ party }: EditFormProps) {
 
         {/* Immagine con Anteprima */}
         <div>
-            <label htmlFor="imageUrl" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Link Immagine</label>
-            <div className="relative">
-                <input 
-                    id="imageUrl"
-                    name="imageUrl" 
-                    type="url"  
-                    placeholder="https://..."
-                    defaultValue={party.imageUrl}
-                    onChange={(e) => setPreviewUrl(e.target.value)}
-                    className="w-full p-3 pl-10 border border-gray-200 rounded-xl bg-gray-50 text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition" 
-                />
-                <ImageIcon size={18} className="absolute left-3 top-3.5 text-gray-400" />
-            </div>
+          <label htmlFor="imagePicker" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Immagine</label>
+          <ImagePicker name="imageUrl" initial={party.imageUrl} onSelect={(url) => setPreviewUrl(url)} />
 
-            {/* Mostra l'anteprima solo se c'è un URL valido (contiene http) */}
-            {previewUrl && previewUrl.startsWith("http") && (
-                <div className="mt-4 relative h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-                    <Image 
-                        src={previewUrl} 
-                        alt="Anteprima" 
-                        fill
-                        className="object-cover" 
-                        sizes="(max-width: 768px) 100vw, 400px" // Ottimizzazione performance
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm z-10">
-                        Anteprima Immagine
-                    </div>
-                </div>
-            )}
+          {/* Mostra l'anteprima solo se c'è un URL valido (contiene http) */}
+          {previewUrl && previewUrl.startsWith("http") && (
+            <div className="mt-4 relative h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+              <Image 
+                src={previewUrl} 
+                alt="Anteprima" 
+                fill
+                className="object-cover" 
+                sizes="(max-width: 768px) 100vw, 400px"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] p-1 text-center backdrop-blur-sm z-10">
+                Anteprima Immagine
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Descrizione */}

@@ -19,27 +19,16 @@ export interface PartyData {
 }
 
 export default async function EditPage({ params }: PageProps) {
-  // 1. Aspettiamo di avere l'ID dalla URL
   const { id } = await params;
-
-  // 🛡️ CONTROLLO DI SICUREZZA
   if (!mongoose.isValidObjectId(id)) {
     return notFound();
-  }
-
-  // 2. Connettiamo al DB
+  }  
   await connectDB();
-
-  // 3. Cerchiamo la festa specifica
-  // Assegnamo : any per poter leggere le proprietà liberamente nel blocco successivo
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   const partyDoc: any = await Party.findById(id).lean();
-
   if (!partyDoc) {
     return notFound();
   }
 
-  // 4. Trasformazione manuale (più sicura dello spread operator ...partyDoc)
   const party: PartyData = {
     _id: partyDoc._id.toString(),
     name: partyDoc.name,
@@ -50,7 +39,6 @@ export default async function EditPage({ params }: PageProps) {
     imageUrl: partyDoc.imageUrl || "",
   };
 
-  // 5. Mostriamo il form
   return (
     <div className="min-h-screen bg-gray-50 p-6 pb-20">
       <EditForm party={party} />
